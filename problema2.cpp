@@ -43,7 +43,9 @@ void dfs_torjan(int u) {
             pilha_tarjan.pop();
             no_stack[v] = false;
             scc.push_back(v);
-            if (u == v) break;
+            if (u == v){
+                break;
+            }
         }
         todas_sccs.push_back(scc);
     }
@@ -57,15 +59,21 @@ bool tem_ciclo_negativo_scc(const vector<int>& scc) {
     long long INF = 1e15; 
     vector<long long> dist(P + 1, INF);
 
-    for (int nodo : scc) dist[nodo] = 0;
+    for (int nodo : scc){
+        dist[nodo] = 0;
+    }
 
     int n = scc.size();
     // relaxar V-1 vezes... padrao
     for (int i = 0; i < n - 1; ++i) {
         for (int u : scc) {
-            if (dist[u] == INF) continue;
+            if (dist[u] == INF){
+                continue;
+            }
             for (vector<Aresta>::iterator it = grafo[u].begin(); it != grafo[u].end(); ++it) {
-                if (!na_scc[it->v]) continue;
+                if (!na_scc[it->v]){
+                    continue;
+                }
                 if (dist[u] + it->peso < dist[it->v]) {
                     dist[it->v] = dist[u] + it->peso;
                 }
@@ -75,7 +83,9 @@ bool tem_ciclo_negativo_scc(const vector<int>& scc) {
 
     // check final de ciclo negativo
     for (int u : scc) {
-        if (dist[u] == INF) continue;
+        if (dist[u] == INF){
+            continue;
+        }
         for (vector<Aresta>::iterator it = grafo[u].begin(); it != grafo[u].end(); ++it) {
             if (!na_scc[it->v]) continue;
             if (dist[u] + it->peso < dist[it->v]) {
@@ -85,7 +95,9 @@ bool tem_ciclo_negativo_scc(const vector<int>& scc) {
         }
     }
 
-    for (int n : scc) na_scc[n] = false;
+    for (int n : scc){
+        na_scc[n] = false;
+    }
     return false;
 }
 
@@ -93,7 +105,9 @@ int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
 
-    if (!(cin >> P >> W)) return 0;
+    if (!(cin >> P >> W)){
+        return 0;
+    }
 
     grafo.resize(P + 1);
     id.assign(P + 1, 0);
@@ -107,7 +121,9 @@ int main() {
     }
 
     for (int i = 1; i <= P; ++i) {
-        if (id[i] == 0) dfs_torjan(i);
+        if (id[i] == 0){
+            dfs_torjan(i);
+        }
     }
 
     vector<vector<int>> res;
@@ -122,7 +138,9 @@ int main() {
             for (vector<Aresta>::iterator a = grafo[u].begin(); a != grafo[u].end(); ++a) {
                 if (a->v == u && a->peso < 0) { ok = true; break; }
             }
-            if (!ok) continue;
+            if (!ok){
+                continue;
+            }
         }
 
         if (tem_ciclo_negativo_scc(scc)) {
