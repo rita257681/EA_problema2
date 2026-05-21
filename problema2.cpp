@@ -35,7 +35,7 @@ void dfs_torjan(int u) {
         }
     }
 
-    // se for raiz da scc, desempilha ate chegar nele
+    // se for raiz da scc, desempilha ate chegar a ele
     if (low[u] == id[u]) {
         vector<int> scc;
         while (true) {
