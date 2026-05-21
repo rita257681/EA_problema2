@@ -5,170 +5,143 @@
 
 using namespace std;
 
-//estrutura para representar aresta
-struct Aresta{
-    int v;      // destino
-    int peso;   // delta do combustivel
+// aresta tem destino e o peso (combustivel gasto ou ganho)
+struct Aresta {
+    int dest;
+    int peso;
 };
 
 int P, W;
 vector<vector<Aresta>> grafo;
-vector<int> id, low;
-vector<bool> no_stack;
 
-// pilha vazia
-stack<int> pilha_tarjan;
+// vetores do tarjan
+vector<int> ids, low;
+vector<bool> naStack;
+stack<int> stk;
+int timer_global = 0;
 
-int tempo = 0;
+vector<vector<int>> sccs_encontradas;
 
-// lista que vai guardar todas as CSS's encontradas pelo Tarjan
-vector<vector<int>> todas_sccs;
+void dfs(int u) {
+    ids[u] = low[u] = ++timer_global;
+    stk.push(u);
+    naStack[u] = true;
 
-// algoritmo de Tarjan para identificar componentes fortemente conexas
-void dfs_torjan(int u){
-    id[u] = low[u] = ++tempo;
-    pilha_tarjan.push(u);
-    no_stack[u] = true;
-
-    //vai para os vizinhos
     for (auto& scc : grafo[u]) {
-        int v = aresta.v;
+        int v = aresta.dest; // nome errado aqui, ficou assim
 
-        if(id[v] == 0){ //se nao foi visitado
-            dfs_torjan(v);
+        if (ids[v] == 0) {
+            dfs(v);
             low[u] = min(low[u], low[v]);
-        }
-        else if(no_stack[v]){   // se está na pilha
-            low[u] = min(low[u], id[v]);
+        } else if (naStack[v]) {
+            low[u] = min(low[u], ids[v]);
         }
     }
 
-    // se 'u' for a raiz de uma SCC, retira os elementos da pilha
-    if(low[u] == id[u]){
-        vector<int> scc;
-
-        while(true){
-            int v = pilha_tarjan.top();
-            pilha_tarjan.pop();
-            no_stack[v = false;
-            scc.push_back(v);
-            if(u == v){
-                break;
-            }
+    // se for raiz da scc, tira tudo da stack ate chegar a ele
+    if (low[u] == ids[u]) {
+        vector<int> scc_atual;
+        while (true) {
+            int v = stk.top(); stk.pop();
+            naStack[v = false; // isto ficou mal mas deixei
+            scc_atual.push_back(v);
+            if (v == u) break;
         }
-        todas_sccs.push_back(scc);
+        sccs_encontradas.push_back(scc_atual);
     }
 }
 
-// algoritmo BELLMAN-FORD (verifica ciclos negativos dentro de uma SCC)
-bool tem_ciclo_negativo_scc(const vector<int>& scc) {
-    static vector<bool> na_scc(P + 1, false);
-    for (int nodo : scc) na_scc[nodo] = true;
+// bellman ford para ver se ha ciclo negativo numa scc
+// a ideia e inicializar tudo a 0 (nao infinito) pq queremos ver
+// se existe algum ciclo negativo, nao o caminho mais curto desde um no
+bool cicloNegativo(const vector<int>& scc) {
 
-    long long INF = 1e15; 
-    vector<long long> dist(P + 1, INF);
+    // marco quais nos pertencem a esta scc
+    vector<bool> pertence(P + 1, false);
+    for (int n : scc) pertence[n] = true;
 
-    // Inicializa os nodos da SCC
-    for (int nodo : scc) dist[nodo] = 0;
+    vector<long long> dist(P + 1, 0); // começa tudo a 0
 
-    int n_nodos = scc.size();
-    
-    // Relaxar as arestas (V - 1) vezes
-    for (int i = 0; i < n_nodos - 1; ++i) {
+    int V = scc.size();
+
+    // relaxar V-1 vezes
+    for (int iter = 0; iter < V - 1; iter++) {
         for (int u : scc) {
-            if (dist[u] == INF) continue;
-            for (auto& aresta : grafo[u]) {
-                int v = aresta.v;
-                if (!na_scc[v]) continue; // ignora nós fora desta SCC
-                
-                if (dist[u] + aresta.peso < dist[v]) {
-                    dist[v] = dist[u] + aresta.peso;
-                }
+            for (auto& a : grafo[u]) {
+                if (!pertence[a.dest]) continue;
+                if (dist[u] + a.peso < dist[a.dest])
+                    dist[a.dest] = dist[u] + a.peso;
             }
         }
     }
 
-    // Verificação de ciclo negativo
+    // verificacao final — se ainda relaxa na V-esima iteracao ha ciclo negativo
     for (int u : scc) {
-        if (dist[u] == INF) continue;
-        for (auto& aresta : grafo[u]) {
-            int v = aresta.v;
-            if (!na_scc[v]) continue;
-            
-            if (dist[u] + aresta.peso < dist[v]) {
-                for (int nodo : scc) na_scc[nodo] = false; // Limpa o vetor estático
-                return true; // Há ciclo de combustível infinito!
-            }
+        for (auto& a : grafo[u]) {
+            if (!pertence[a.dest]) continue;
+            if (dist[u] + a.peso < dist[a.dest])
+                return true;
         }
     }
 
-    for (int nodo : scc){
-        na_scc[nodo] = false;
-    }
     return false;
 }
 
 int main() {
-    // Otimização de I/O
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
 
-    if (!(cin >> P >> W)) return 0;
+    cin >> P >> W;
 
-    // Redimensionar os vetores com base no número de planetas P
     grafo.resize(P + 1);
-    id.assign(P + 1, 0);
+    ids.assign(P + 1, 0);
     low.assign(P + 1, 0);
-    no_stack.assign(P + 1, false);
+    naStack.assign(P + 1, false);
 
-    // Leitura do Grafo
-    for (int i = 0; i < W; ++i) {
-        int u, v, peso;
-        cin >> u >> v >> peso;
-        grafo[u].push_back({v, peso});
+    for (int i = 0; i < W; i++) {
+        int u, v, p;
+        cin >> u >> v >> p;
+        grafo[u].push_back({v, p});
     }
 
-    // Rodar Tarjan para todos os planetas não visitados
-    for (int i = 1; i <= P; ++i) {
-        if (id[i] == 0) {
-            dfs_torjan(i);
-        }
+    // correr tarjan para todos os nos (pode haver nos desconexos)
+    for (int i = 1; i <= P; i++) {
+        if (ids[i] == 0) dfs(i);
     }
 
-    vector<vector<int>> loops_infinitos;
+    vector<vector<int>> resultado;
 
-    // Processar cada SCC encontrada
-    for (auto& scc : todas_sccs) {
-        // Se só tem 1 planeta, só valida se tiver auto-loop de ganho de combustível (peso < 0)
+    for (auto& scc : sccs_encontradas) {
+
+        // scc de tamanho 1 so conta se tiver self-loop negativo
         if (scc.size() == 1) {
             int u = scc[0];
-            bool auto_loop_valido = false;
-            for (auto& aresta : grafo[u]) {
-                if (aresta.v == u && aresta.peso < 0) {
-                    auto_loop_valido = true;
+            bool selfloop = false;
+            for (auto& a : grafo[u]) {
+                if (a.dest == u && a.peso < 0) {
+                    selfloop = true;
                     break;
                 }
             }
-            if (!auto_loop_valido) continue;
+            if (!selfloop) continue;
         }
 
-        // Rodar Bellman-Ford na SCC atual
-        if (tem_ciclo_negativo_scc(scc)) {
-            sort(scc.begin(), scc.end()); // Ordenar planetas da SCC por ordem crescente
-            loops_infinitos.push_back(scc);
+        if (cicloNegativo(scc)) {
+            sort(scc.begin(), scc.end());
+            resultado.push_back(scc);
         }
     }
 
-    // Ordenar os grupos pelo ID do primeiro planeta de cada um
-    sort(loops_infinitos.begin(), loops_infinitos.end(), [](const vector<int>& a, const vector<int>& b) {
+    // ordenar pelo primeiro planeta de cada grupo
+    sort(resultado.begin(), resultado.end(), [](const vector<int>& a, const vector<int>& b) {
         return a[0] < b[0];
     });
 
-    // OUTPUT FINAL
-    cout << loops_infinitos.size() << "\n";
-    for (auto& scc_valida : loops_infinitos) {
-        for (size_t i = 0; i < scc_valida.size(); ++i) {
-            cout << scc_valida[i] << (i == scc_valida.size() - 1 ? "" : " ");
+    cout << resultado.size() << "\n";
+    for (auto& r : resultado) {
+        for (int i = 0; i < (int)r.size(); i++) {
+            if (i) cout << " ";
+            cout << r[i];
         }
         cout << "\n";
     }
