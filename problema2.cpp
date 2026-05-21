@@ -102,7 +102,9 @@ bool tem_ciclo_negativo_scc(const vector<int>& scc) {
         }
     }
 
-    for (int nodo : scc) na_scc[nodo] = false;
+    for (int nodo : scc){
+        na_scc[nodo] = false;
+    }
     return false;
 }
 
