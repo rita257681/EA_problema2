@@ -62,8 +62,9 @@ void dfs_torjan(int u){
 // algoritmo bellman-ford (verifica ciclos negativos dentro de uma SCC)
 bool tem_ciclo_negativo_scc(const vector<int>& scc) {
     static vector<bool> na_scc(P + 1, false);
-    for (int nodo : scc) na_scc[nodo] = true;
-
+    for (int nodo : scc){
+        na_scc[nodo] = true;
+    }
     long long INF = 1e15; 
     vector<long long> dist(P + 1, INF);
 
