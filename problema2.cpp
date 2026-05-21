@@ -54,8 +54,9 @@ void dfs_torjan(int u) {
 // aqui tento ver se ha ciclo negativo c/ bellman-ford
 bool tem_ciclo_negativo_scc(const vector<int>& scc) {
     static vector<bool> na_scc(P + 1, false);
-    for (int nodo : scc) na_scc[nodo] = true;
-
+    for (int nodo : scc) {
+        na_scc[nodo] = true;
+    }
     long long INF = 1e15; 
     vector<long long> dist(P + 1, INF);
 
@@ -87,9 +88,13 @@ bool tem_ciclo_negativo_scc(const vector<int>& scc) {
             continue;
         }
         for (vector<Aresta>::iterator it = grafo[u].begin(); it != grafo[u].end(); ++it) {
-            if (!na_scc[it->v]) continue;
+            if (!na_scc[it->v]){
+                continue;
+            }
             if (dist[u] + it->peso < dist[it->v]) {
-                for (int n : scc) na_scc[n] = false; // limpa p/ prox
+                for (int n : scc){
+                    na_scc[n] = false; // limpa p/ prox
+                }
                 return true;
             }
         }
